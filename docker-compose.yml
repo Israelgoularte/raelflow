@@ -1,169 +1,193 @@
-version: '3.8'
+version: "3.8"
+
+networks:
+  raelflow_net:
+    external: true
 
 services:
-  akaunting:
-    image: akaunting/akaunting:latest
-    container_name: raelflow_akaunting
-    env_file: ./akaunting.env
-    depends_on:
-      - akaunting_db
+  traefik:
+    image: traefik:v2.10
+    container_name: traefik
+    command:
+      - "--api.dashboard=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:8080"
     ports:
-      - "8080:80"
+      - "8080:8080"    # HTTP entrypoint for all apps
+      - "8081:8081"    # Traefik dashboard (optional)
     volumes:
-      - ./data/akaunting/uploads:/var/www/html/storage
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - raelflow_net
 
   akaunting_db:
     image: mariadb:10.7
-    container_name: raelflow_akaunting_db
+    container_name: akaunting_db
     environment:
+      MYSQL_ROOT_PASSWORD: rootpass
       MYSQL_DATABASE: akaunting
       MYSQL_USER: akaunting
-      MYSQL_PASSWORD: S3nh4Akaunt!
-      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_PASSWORD: S3nh4OpenPr0j!
     volumes:
-      - ./data/akaunting_db:/var/lib/mysql
+      - data/akaunting_db:/var/lib/mysql
     networks:
       - raelflow_net
 
-  firefly:
-    image: fireflyiii/core:latest
-    container_name: raelflow_firefly
-    env_file: ./firefly.env
+  akaunting:
+    image: akaunting/akaunting:latest
+    container_name: akaunting
+    env_file:
+      - akaunting.env
     depends_on:
-      - firefly_db
-    ports:
-      - "8051:8080"
+      - akaunting_db
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.akaunting.rule=PathPrefix(`/akaunting`)"
+      - "traefik.http.routers.akaunting.entrypoints=web"
+      - "traefik.http.services.akaunting.loadbalancer.server.port=80"
     volumes:
-      - ./data/firefly/upload:/var/www/html/storage/upload
+      - data/akaunting_uploads:/var/www/html/storage
     networks:
       - raelflow_net
 
   firefly_db:
     image: mariadb:10.7
-    container_name: raelflow_firefly_db
+    container_name: firefly_db
     environment:
+      MYSQL_ROOT_PASSWORD: rootpass
       MYSQL_DATABASE: firefly
       MYSQL_USER: firefly
-      MYSQL_PASSWORD: S3nh4Firefly!
-      MYSQL_ROOT_PASSWORD: rootpass2
+      MYSQL_PASSWORD: S3nh4OpenPr0j!
     volumes:
-      - ./data/firefly_db:/var/lib/mysql
+      - data/firefly_db:/var/lib/mysql
     networks:
       - raelflow_net
 
-  openproject:
-    image: openproject/community:13.2-slim
-    container_name: raelflow_openproject
+  firefly:
+    image: fireflyiii/firefly-iii:latest
+    container_name: firefly
+    env_file:
+      - firefly.env
     depends_on:
-      - openproject_db
-    ports:
-      - "8081:8080"
-    environment:
-      OPENPROJECT_HTTPS: "false"
-      # configurações DB separadas (sem usar DATABASE_URL)
-      OPENPROJECT_DB_ADAPTER: "postgresql"
-      OPENPROJECT_DB_HOST: "openproject_db"
-      OPENPROJECT_DB_PORT: "5432"
-      OPENPROJECT_DB_DATABASE: "openproject"
-      OPENPROJECT_DB_USERNAME: "openproject"
-      OPENPROJECT_DB_PASSWORD: "S3nh4OpenPr0j!"
-    volumes:
-      - ./data/openproject/assets:/var/openproject/assets
-      - ./data/openproject/config/database.yml:/app/config/database.yml:ro
-
+      - firefly_db
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.firefly.rule=PathPrefix(`/firefly`)"
+      - "traefik.http.routers.firefly.entrypoints=web"
+      - "traefik.http.services.firefly.loadbalancer.server.port=8080"
     networks:
       - raelflow_net
-
-
 
   openproject_db:
-    image: postgres:13
-    container_name: raelflow_openproject_db
+    image: postgres:14
+    container_name: openproject_db
     environment:
       POSTGRES_USER: openproject
       POSTGRES_PASSWORD: S3nh4OpenPr0j!
       POSTGRES_DB: openproject
     volumes:
-      - ./data/openproject_db:/var/lib/postgresql/data
+      - data/openproject_db:/var/lib/postgresql/data
+    networks:
+      - raelflow_net
+
+  openproject:
+    image: openproject/community:13.2-slim
+    container_name: openproject
+    depends_on:
+      - openproject_db
+    environment:
+      OPENPROJECT_HTTPS: "false"
+      OPENPROJECT_DB_HOST: openproject_db
+      OPENPROJECT_DB_USERNAME: openproject
+      OPENPROJECT_DB_PASSWORD: S3nh4OpenPr0j!
+      OPENPROJECT_DB_DATABASE: openproject
+      OPENPROJECT_DB_DIALECT: postgresql
+    volumes:
+      - data/openproject_assets:/var/openproject/assets
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.openproject.rule=PathPrefix(`/openproject`)"
+      - "traefik.http.routers.openproject.entrypoints=web"
+      - "traefik.http.services.openproject.loadbalancer.server.port=8080"
     networks:
       - raelflow_net
 
   baikal:
-    image: ckulka/baikal:latest
-    container_name: raelflow_baikal
-    ports:
-      - "8082:80"
+    image: byron/baikal:latest
+    container_name: baikal
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.baikal.rule=PathPrefix(`/baikal`)"
+      - "traefik.http.routers.baikal.entrypoints=web"
+      - "traefik.http.services.baikal.loadbalancer.server.port=80"
     volumes:
-      - ./data/baikal:/var/www/html/Specific/db
+      - data/baikal_data:/var/www/html/Specific
     networks:
       - raelflow_net
 
   n8n:
     image: n8nio/n8n:latest
-    container_name: raelflow_n8n
-    ports:
-      - "8083:5678"
+    container_name: n8n
     environment:
       N8N_BASIC_AUTH_ACTIVE: "true"
-      N8N_BASIC_AUTH_USER: admin
-      N8N_BASIC_AUTH_PASSWORD: password123
-      N8N_HOST: "localhost"
-      N8N_PORT: 5678
+      N8N_BASIC_AUTH_USER: "admin"
+      N8N_BASIC_AUTH_PASSWORD: "admin"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.n8n.rule=PathPrefix(`/n8n`)"
+      - "traefik.http.routers.n8n.entrypoints=web"
+      - "traefik.http.services.n8n.loadbalancer.server.port=5678"
     volumes:
-      - ./data/n8n:/home/node/.n8n
+      - data/n8n:/home/node/.n8n
     networks:
       - raelflow_net
 
   metabase:
     image: metabase/metabase:latest
-    container_name: raelflow_metabase
-    ports:
-      - "8084:3000"
-    environment:
-      JAVA_TIMEZONE: America/Sao_Paulo
-      MB_DB_FILE: /metabase.db/metabase.db
-    volumes:
-      - ./data/metabase:/metabase.db
+    container_name: metabase
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.metabase.rule=PathPrefix(`/metabase`)"
+      - "traefik.http.routers.metabase.entrypoints=web"
+      - "traefik.http.services.metabase.loadbalancer.server.port=3000"
     networks:
       - raelflow_net
 
   grafana:
     image: grafana/grafana:latest
-    container_name: raelflow_grafana
-    ports:
-      - "8085:3000"
-    environment:
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: S3nh4Gr4f!
-      GF_USERS_ALLOW_SIGN_UP: "false"
+    container_name: grafana
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.grafana.rule=PathPrefix(`/grafana`)"
+      - "traefik.http.routers.grafana.entrypoints=web"
+      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
     volumes:
-      - ./data/grafana:/var/lib/grafana
+      - data/grafana:/var/lib/grafana
     networks:
       - raelflow_net
 
   botpress:
     image: botpress/server:latest
-    container_name: raelflow_botpress
-    ports:
-      - "8086:3000"
-    environment:
-      BP_DATA_FOLDER: /botpress/data
+    container_name: botpress
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.botpress.rule=PathPrefix(`/botpress`)"
+      - "traefik.http.routers.botpress.entrypoints=web"
+      - "traefik.http.services.botpress.loadbalancer.server.port=3000"
     volumes:
-      - ./data/botpress:/botpress/data
+      - data/botpress:/botpress/data
     networks:
       - raelflow_net
 
   nota_fiscal:
-    build: ./microservice
-    container_name: raelflow_notafiscal
-    env_file: ./microservice/.env
-    depends_on:
-      - akaunting_db
+    build:
+      context: ./nota_fiscal
+    container_name: nota_fiscal
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.nota_fiscal.rule=PathPrefix(`/nota_fiscal`)"
+      - "traefik.http.routers.nota_fiscal.entrypoints=web"
+      - "traefik.http.services.nota_fiscal.loadbalancer.server.port=8000"
     networks:
       - raelflow_net
-
-networks:
-  raelflow_net:
-    driver: bridge
