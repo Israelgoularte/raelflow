@@ -179,15 +179,3 @@ services:
       - data/botpress:/botpress/data
     networks:
       - raelflow_net
-
-  nota_fiscal:
-    build:
-      context: ./nota_fiscal
-    container_name: nota_fiscal
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.nota_fiscal.rule=PathPrefix(`/nota_fiscal`)"
-      - "traefik.http.routers.nota_fiscal.entrypoints=web"
-      - "traefik.http.services.nota_fiscal.loadbalancer.server.port=8000"
-    networks:
-      - raelflow_net
