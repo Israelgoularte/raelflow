@@ -62,16 +62,13 @@ services:
       - "8081:8080"
     environment:
       OPENPROJECT_HTTPS: "false"
-      OPENPROJECT_DB_HOST: openproject_db
-      OPENPROJECT_DB_USERNAME: openproject
-      OPENPROJECT_DB_PASSWORD: S3nh4OpenPr0j!
-      OPENPROJECT_DB_DATABASE: openproject
-      OPENPROJECT_DB_DIALECT: postgresql
-
+      # configure tudo via DATABASE_URL:
+      DATABASE_URL: "postgresql://openproject:S3nh4OpenPr0j!@openproject_db:5432/openproject"
     volumes:
       - ./data/openproject/assets:/var/openproject/assets
     networks:
       - raelflow_net
+
 
   openproject_db:
     image: postgres:13
