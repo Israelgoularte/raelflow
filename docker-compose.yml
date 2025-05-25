@@ -30,7 +30,7 @@ services:
       MYSQL_USER: akaunting
       MYSQL_PASSWORD: S3nh4OpenPr0j!
     volumes:
-      - data/akaunting_db:/var/lib/mysql
+      - ./data/akaunting_db:/var/lib/mysql
     networks:
       - raelflow_net
 
@@ -47,7 +47,7 @@ services:
       - "traefik.http.routers.akaunting.entrypoints=web"
       - "traefik.http.services.akaunting.loadbalancer.server.port=80"
     volumes:
-      - data/akaunting_uploads:/var/www/html/storage
+      - ./data/akaunting_uploads:/var/www/html/storage
     networks:
       - raelflow_net
 
@@ -60,7 +60,7 @@ services:
       MYSQL_USER: firefly
       MYSQL_PASSWORD: S3nh4OpenPr0j!
     volumes:
-      - data/firefly_db:/var/lib/mysql
+      - ./data/firefly_db:/var/lib/mysql
     networks:
       - raelflow_net
 
@@ -87,7 +87,7 @@ services:
       POSTGRES_PASSWORD: S3nh4OpenPr0j!
       POSTGRES_DB: openproject
     volumes:
-      - data/openproject_db:/var/lib/postgresql/data
+      - ./data/openproject_db:/var/lib/postgresql/data
     networks:
       - raelflow_net
 
@@ -104,7 +104,7 @@ services:
       OPENPROJECT_DB_DATABASE: openproject
       OPENPROJECT_DB_DIALECT: postgresql
     volumes:
-      - data/openproject_assets:/var/openproject/assets
+      - ./data/openproject_assets:/var/openproject/assets
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.openproject.rule=PathPrefix(`/openproject`)"
@@ -122,7 +122,7 @@ services:
       - "traefik.http.routers.baikal.entrypoints=web"
       - "traefik.http.services.baikal.loadbalancer.server.port=80"
     volumes:
-      - data/baikal_data:/var/www/html/Specific
+      - ./data/baikal_data:/var/www/html/Specific
     networks:
       - raelflow_net
 
@@ -139,7 +139,7 @@ services:
       - "traefik.http.routers.n8n.entrypoints=web"
       - "traefik.http.services.n8n.loadbalancer.server.port=5678"
     volumes:
-      - data/n8n:/home/node/.n8n
+      - ./data/n8n:/home/node/.n8n
     networks:
       - raelflow_net
 
@@ -163,7 +163,7 @@ services:
       - "traefik.http.routers.grafana.entrypoints=web"
       - "traefik.http.services.grafana.loadbalancer.server.port=3000"
     volumes:
-      - data/grafana:/var/lib/grafana
+      - ./data/grafana:/var/lib/grafana
     networks:
       - raelflow_net
 
@@ -176,6 +176,6 @@ services:
       - "traefik.http.routers.botpress.entrypoints=web"
       - "traefik.http.services.botpress.loadbalancer.server.port=3000"
     volumes:
-      - data/botpress:/botpress/data
+      - ./data/botpress:/botpress/data
     networks:
       - raelflow_net
