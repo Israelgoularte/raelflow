@@ -71,7 +71,9 @@ services:
       - raelflow_net
 
   firefly:
-    image: fireflyiii/firefly-iii:6.8.5
+    build:
+      context: ./firefly-src
+      dockerfile: Dockerfile
     container_name: firefly
     env_file:
       - ./firefly.env
@@ -81,8 +83,6 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.firefly.rule=PathPrefix(`/firefly`)"
       - "traefik.http.routers.firefly.entrypoints=web"
-      - "traefik.http.middlewares.firefly-stripprefix.stripprefix.prefixes=/firefly"
-      - "traefik.http.routers.firefly.middlewares=firefly-stripprefix"
       - "traefik.http.services.firefly.loadbalancer.server.port=8080"
     networks:
       - raelflow_net
