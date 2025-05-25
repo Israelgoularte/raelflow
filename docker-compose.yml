@@ -71,7 +71,7 @@ services:
       - raelflow_net
 
   firefly:
-    image: ghcr.io/firefly-iii/firefly-iii:latest
+    image: fireflyiii/firefly-iii:6.8.5
     container_name: firefly
     env_file:
       - ./firefly.env
