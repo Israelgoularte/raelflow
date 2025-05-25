@@ -63,7 +63,7 @@ services:
     environment:
       OPENPROJECT_HTTPS: "false"
       # configure tudo via DATABASE_URL:
-      DATABASE_URL: "postgresql://openproject:S3nh4OpenPr0j!@openproject_db:5432/openproject"
+      DATABASE_URL: "postgresql://openproject:S3nh4OpenPr0j%21@openproject_db:5432/openproject"
     volumes:
       - ./data/openproject/assets:/var/openproject/assets
     networks:
