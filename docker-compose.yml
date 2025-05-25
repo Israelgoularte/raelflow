@@ -14,7 +14,7 @@ services:
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:8080"
     ports:
-      - "8080:8080"    # HTTP entrypoint for all apps & Traefik dashboard
+      - "8080:8080"    # HTTP entrypoint for all apps & dashboard
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
@@ -44,7 +44,9 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.akaunting.rule=PathPrefix(`/akaunting`)"
       - "traefik.http.routers.akaunting.entrypoints=web"
+      - "traefik.http.routers.akaunting.middlewares=akaunting-stripprefix"
       - "traefik.http.services.akaunting.loadbalancer.server.port=80"
+      - "traefik.http.middlewares.akaunting-stripprefix.stripprefix.prefixes=/akaunting"
     volumes:
       - ./data/akaunting_uploads:/var/www/html/storage
     networks:
@@ -64,7 +66,7 @@ services:
       - raelflow_net
 
   firefly:
-    image: fireflyiii/core:version-6.0.27
+    image: fireflyiii/firefly-iii:latest
     container_name: firefly
     env_file:
       - firefly.env
@@ -74,9 +76,9 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.firefly.rule=PathPrefix(`/firefly`)"
       - "traefik.http.routers.firefly.entrypoints=web"
+      - "traefik.http.routers.firefly.middlewares=firefly-stripprefix"
       - "traefik.http.services.firefly.loadbalancer.server.port=8080"
-    volumes:
-      - ./data/firefly_uploads:/var/www/html/storage
+      - "traefik.http.middlewares.firefly-stripprefix.stripprefix.prefixes=/firefly"
     networks:
       - raelflow_net
 
@@ -110,7 +112,9 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.openproject.rule=PathPrefix(`/openproject`)"
       - "traefik.http.routers.openproject.entrypoints=web"
+      - "traefik.http.routers.openproject.middlewares=openproject-stripprefix"
       - "traefik.http.services.openproject.loadbalancer.server.port=8080"
+      - "traefik.http.middlewares.openproject-stripprefix.stripprefix.prefixes=/openproject"
     networks:
       - raelflow_net
 
@@ -121,7 +125,9 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.baikal.rule=PathPrefix(`/baikal`)"
       - "traefik.http.routers.baikal.entrypoints=web"
+      - "traefik.http.routers.baikal.middlewares=baikal-stripprefix"
       - "traefik.http.services.baikal.loadbalancer.server.port=80"
+      - "traefik.http.middlewares.baikal-stripprefix.stripprefix.prefixes=/baikal"
     volumes:
       - ./data/baikal_data:/var/www/html/Specific
     networks:
@@ -138,7 +144,9 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.n8n.rule=PathPrefix(`/n8n`)"
       - "traefik.http.routers.n8n.entrypoints=web"
+      - "traefik.http.routers.n8n.middlewares=n8n-stripprefix"
       - "traefik.http.services.n8n.loadbalancer.server.port=5678"
+      - "traefik.http.middlewares.n8n-stripprefix.stripprefix.prefixes=/n8n"
     volumes:
       - ./data/n8n:/home/node/.n8n
     networks:
@@ -151,7 +159,9 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.metabase.rule=PathPrefix(`/metabase`)"
       - "traefik.http.routers.metabase.entrypoints=web"
+      - "traefik.http.routers.metabase.middlewares=metabase-stripprefix"
       - "traefik.http.services.metabase.loadbalancer.server.port=3000"
+      - "traefik.http.middlewares.metabase-stripprefix.stripprefix.prefixes=/metabase"
     networks:
       - raelflow_net
 
@@ -162,7 +172,9 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.grafana.rule=PathPrefix(`/grafana`)"
       - "traefik.http.routers.grafana.entrypoints=web"
+      - "traefik.http.routers.grafana.middlewares=grafana-stripprefix"
       - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+      - "traefik.http.middlewares.grafana-stripprefix.stripprefix.prefixes=/grafana"
     volumes:
       - ./data/grafana:/var/lib/grafana
     networks:
@@ -175,18 +187,10 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.botpress.rule=PathPrefix(`/botpress`)"
       - "traefik.http.routers.botpress.entrypoints=web"
+      - "traefik.http.routers.botpress.middlewares=botpress-stripprefix"
       - "traefik.http.services.botpress.loadbalancer.server.port=3000"
+      - "traefik.http.middlewares.botpress-stripprefix.stripprefix.prefixes=/botpress"
     volumes:
       - ./data/botpress:/botpress/data
     networks:
       - raelflow_net
-
-volumes:
-  akaunting_db:
-  firefly_db:
-  firefly_uploads:
-  openproject_db:
-  baikal_data:
-  n8n:
-  grafana:
-  botpress:
