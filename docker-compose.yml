@@ -1,11 +1,31 @@
-version: '3.8'
+version: "3.8"
+
 networks:
   raelflow_net:
     external: true
 
 services:
+  # --- Traefik Proxy Reverso ---
+  traefik:
+    image: traefik:v2.10
+    container_name: traefik
+    command:
+      - "--api.insecure=true"                             # Dashboard em /traefik
+      - "--api.dashboard=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"                   # Listen em 80
+    ports:
+      - "80:80"                                           # Porta única
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - raelflow_net
+
+  # --- OpenProject ---
   openproject_db:
     image: postgres:14
+    container_name: openproject_db
     environment:
       POSTGRES_USER: openproject
       POSTGRES_PASSWORD: S3nh4OpenPr0j!
@@ -16,31 +36,37 @@ services:
       - raelflow_net
 
   openproject:
-    build:
-      context: ./services/openproject
-    env_file:
-      - env/openproject.env
+    image: openproject/community:13.2-slim
+    container_name: raelflow_openproject
     depends_on:
       - openproject_db
+    environment:
+      OPENPROJECT_HTTPS: "false"
+      OPENPROJECT_DB_HOST: openproject_db
+      OPENPROJECT_DB_USERNAME: openproject
+      OPENPROJECT_DB_PASSWORD: S3nh4OpenPr0j!
+      OPENPROJECT_DB_DATABASE: openproject
+      OPENPROJECT_DB_DIALECT: postgresql
+    volumes:
+      - ./data/openproject_assets:/var/openproject/assets
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.openproject.rule=PathPrefix(`/openproject`)"
+      - "traefik.http.routers.openproject.entrypoints=web"
       - "traefik.http.services.openproject.loadbalancer.server.port=8080"
-    volumes:
-      - ./data/openproject_assets:/var/openproject/assets
     networks:
       - raelflow_net
 
+  # --- Calendar (Baïkal) ---
   calendar:
-    build:
-      context: ./services/calendar
-    env_file:
-      - env/baikal.env
+    image: ckulka/baikal:0.9.4-apache
+    container_name: raelflow_calendar
+    volumes:
+      - ./data/calendar_data:/var/www/html/Specific
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.calendar.rule=PathPrefix(`/calendar`)"
+      - "traefik.http.routers.calendar.entrypoints=web"
       - "traefik.http.services.calendar.loadbalancer.server.port=80"
-    volumes:
-      - ./data/baikal:/var/www/html/Specific
     networks:
       - raelflow_net
