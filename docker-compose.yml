@@ -62,6 +62,12 @@ services:
       - "8081:8080"
     environment:
       OPENPROJECT_HTTPS: "false"
+      OPENPROJECT_DB_HOST: openproject_db
+      OPENPROJECT_DB_USERNAME: openproject
+      OPENPROJECT_DB_PASSWORD: S3nh4OpenPr0j!
+      OPENPROJECT_DB_DATABASE: openproject
+      OPENPROJECT_DB_DIALECT: postgresql
+
     volumes:
       - ./data/openproject/assets:/var/openproject/assets
     networks:
