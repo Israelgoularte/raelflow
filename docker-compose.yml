@@ -5,24 +5,22 @@ networks:
     external: true
 
 services:
-  # --- Traefik Proxy Reverso ---
   traefik:
     image: traefik:v2.10
     container_name: traefik
     command:
-      - "--api.insecure=true"                             # Dashboard em /traefik
       - "--api.dashboard=true"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.web.address=:80"                   # Listen em 80
+      - "--entrypoints.web.address=:80"
     ports:
-      - "80:80"                                           # Porta única
+      - "80:80"
+      - "8081:8081"    # se quiser dashboard em /traefik
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - raelflow_net
 
-  # --- OpenProject ---
   openproject_db:
     image: postgres:14
     container_name: openproject_db
@@ -37,7 +35,7 @@ services:
 
   openproject:
     image: openproject/community:13.2-slim
-    container_name: raelflow_openproject
+    container_name: openproject
     depends_on:
       - openproject_db
     environment:
@@ -51,22 +49,28 @@ services:
       - ./data/openproject_assets:/var/openproject/assets
     labels:
       - "traefik.enable=true"
+      # Roteia todo /openproject para este container
       - "traefik.http.routers.openproject.rule=PathPrefix(`/openproject`)"
       - "traefik.http.routers.openproject.entrypoints=web"
+      # StripPrefix antes de enviar para o container
+      - "traefik.http.middlewares.openproject-strip.stripprefix.prefixes=/openproject"
+      - "traefik.http.routers.openproject.middlewares=openproject-strip@docker"
+      # Porta interna do serviço
       - "traefik.http.services.openproject.loadbalancer.server.port=8080"
     networks:
       - raelflow_net
 
-  # --- Calendar (Baïkal) ---
   calendar:
     image: ckulka/baikal:0.9.4-apache
-    container_name: raelflow_calendar
-    volumes:
-      - ./data/calendar_data:/var/www/html/Specific
+    container_name: calendar
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.calendar.rule=PathPrefix(`/calendar`)"
       - "traefik.http.routers.calendar.entrypoints=web"
+      - "traefik.http.middlewares.calendar-strip.stripprefix.prefixes=/calendar"
+      - "traefik.http.routers.calendar.middlewares=calendar-strip@docker"
       - "traefik.http.services.calendar.loadbalancer.server.port=80"
+    volumes:
+      - ./data/calendar_data:/var/www/html/Specific
     networks:
       - raelflow_net
