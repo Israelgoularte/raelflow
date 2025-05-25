@@ -1,96 +1,11 @@
-version: "3.8"
-
+version: '3.8'
 networks:
   raelflow_net:
     external: true
 
 services:
-  # Traefik acting as reverse-proxy on :8080
-  traefik:
-    image: traefik:v2.10
-    container_name: traefik
-    command:
-      - "--api.dashboard=true"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.web.address=:8080"
-      - "--entrypoints.websecure.address=:8443"
-    ports:
-      - "8080:8080"    # HTTP for apps + dashboard
-      - "8443:8443"    # HTTPS endpoint (se precisar)
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    networks:
-      - raelflow_net
-
-  # 1) Akaunting (Finanças)
-  akaunting_db:
-    image: mariadb:10.5
-    container_name: akaunting_db
-    environment:
-      MYSQL_ROOT_PASSWORD: rootpass
-      MYSQL_DATABASE: akaunting
-      MYSQL_USER: akaunting
-      MYSQL_PASSWORD: S3nh4OpenPr0j!
-    volumes:
-      - ./data/akaunting_db:/var/lib/mysql
-    networks:
-      - raelflow_net
-
-  akaunting:
-    image: akaunting/akaunting:latest
-    container_name: akaunting
-    env_file:
-      - ./akaunting.env
-    depends_on:
-      - akaunting_db
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.akaunting.rule=PathPrefix(`/akaunting`)"
-      - "traefik.http.routers.akaunting.entrypoints=web"
-      - "traefik.http.middlewares.akaunting-stripprefix.stripprefix.prefixes=/akaunting"
-      - "traefik.http.routers.akaunting.middlewares=akaunting-stripprefix"
-      - "traefik.http.services.akaunting.loadbalancer.server.port=80"
-    volumes:
-      - ./data/akaunting_uploads:/var/www/html/storage
-    networks:
-      - raelflow_net
-
-  # 2) Firefly III (Investimentos)
-  firefly_db:
-    image: mariadb:10.5
-    container_name: firefly_db
-    environment:
-      MYSQL_ROOT_PASSWORD: rootpass
-      MYSQL_DATABASE: firefly
-      MYSQL_USER: firefly
-      MYSQL_PASSWORD: S3nh4OpenPr0j!
-    volumes:
-      - ./data/firefly_db:/var/lib/mysql
-    networks:
-      - raelflow_net
-
-  firefly:
-    build:
-      context: ./firefly-src
-      dockerfile: Dockerfile
-    container_name: firefly
-    env_file:
-      - ./firefly.env
-    depends_on:
-      - firefly_db
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.firefly.rule=PathPrefix(`/firefly`)"
-      - "traefik.http.routers.firefly.entrypoints=web"
-      - "traefik.http.services.firefly.loadbalancer.server.port=8080"
-    networks:
-      - raelflow_net
-
-  # 3) OpenProject (Projetos)
   openproject_db:
     image: postgres:14
-    container_name: openproject_db
     environment:
       POSTGRES_USER: openproject
       POSTGRES_PASSWORD: S3nh4OpenPr0j!
@@ -101,107 +16,31 @@ services:
       - raelflow_net
 
   openproject:
-    image: openproject/community:13.2-slim
-    container_name: openproject
+    build:
+      context: ./services/openproject
+    env_file:
+      - env/openproject.env
     depends_on:
       - openproject_db
-    environment:
-      OPENPROJECT_HTTPS: "false"
-      OPENPROJECT_DB_HOST: openproject_db
-      OPENPROJECT_DB_USERNAME: openproject
-      OPENPROJECT_DB_PASSWORD: S3nh4OpenPr0j!
-      OPENPROJECT_DB_DATABASE: openproject
-      OPENPROJECT_DB_DIALECT: postgresql
-    volumes:
-      - ./data/openproject_assets:/var/openproject/assets
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.openproject.rule=PathPrefix(`/openproject`)"
-      - "traefik.http.routers.openproject.entrypoints=web"
-      - "traefik.http.middlewares.openproject-stripprefix.stripprefix.prefixes=/openproject"
-      - "traefik.http.routers.openproject.middlewares=openproject-stripprefix"
       - "traefik.http.services.openproject.loadbalancer.server.port=8080"
-    networks:
-      - raelflow_net
-
-  # 4) Baïkal (Agenda / CalDAV)
-  baikal:
-    image: ckulka/baikal:0.9.4-apache
-    container_name: baikal
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.baikal.rule=PathPrefix(`/baikal`)"
-      - "traefik.http.routers.baikal.entrypoints=web"
-      - "traefik.http.middlewares.baikal-stripprefix.stripprefix.prefixes=/baikal"
-      - "traefik.http.routers.baikal.middlewares=baikal-stripprefix"
-      - "traefik.http.services.baikal.loadbalancer.server.port=80"
     volumes:
-      - ./data/baikal_data:/var/www/html/Specific
+      - ./data/openproject_assets:/var/openproject/assets
     networks:
       - raelflow_net
 
-  # 5) n8n (Automação)
-  n8n:
-    image: n8nio/n8n:latest
-    container_name: n8n
-    environment:
-      N8N_BASIC_AUTH_ACTIVE: "true"
-      N8N_BASIC_AUTH_USER: "admin"
-      N8N_BASIC_AUTH_PASSWORD: "admin"
+  calendar:
+    build:
+      context: ./services/calendar
+    env_file:
+      - env/baikal.env
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.n8n.rule=PathPrefix(`/n8n`)"
-      - "traefik.http.routers.n8n.entrypoints=web"
-      - "traefik.http.middlewares.n8n-stripprefix.stripprefix.prefixes=/n8n"
-      - "traefik.http.routers.n8n.middlewares=n8n-stripprefix"
-      - "traefik.http.services.n8n.loadbalancer.server.port=5678"
+      - "traefik.http.routers.calendar.rule=PathPrefix(`/calendar`)"
+      - "traefik.http.services.calendar.loadbalancer.server.port=80"
     volumes:
-      - ./data/n8n:/home/node/.n8n
-    networks:
-      - raelflow_net
-
-  # 6) Metabase (BI)
-  metabase:
-    image: metabase/metabase:latest
-    container_name: metabase
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.metabase.rule=PathPrefix(`/metabase`)"
-      - "traefik.http.routers.metabase.entrypoints=web"
-      - "traefik.http.middlewares.metabase-stripprefix.stripprefix.prefixes=/metabase"
-      - "traefik.http.routers.metabase.middlewares=metabase-stripprefix"
-      - "traefik.http.services.metabase.loadbalancer.server.port=3000"
-    networks:
-      - raelflow_net
-
-  # 7) Grafana (Dashboard)
-  grafana:
-    image: grafana/grafana:latest
-    container_name: grafana
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.grafana.rule=PathPrefix(`/grafana`)"
-      - "traefik.http.routers.grafana.entrypoints=web"
-      - "traefik.http.middlewares.grafana-stripprefix.stripprefix.prefixes=/grafana"
-      - "traefik.http.routers.grafana.middlewares=grafana-stripprefix"
-      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
-    volumes:
-      - ./data/grafana:/var/lib/grafana
-    networks:
-      - raelflow_net
-
-  # 8) Botpress (IA/Chat)
-  botpress:
-    image: botpress/server:latest
-    container_name: botpress
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.botpress.rule=PathPrefix(`/botpress`)"
-      - "traefik.http.routers.botpress.entrypoints=web"
-      - "traefik.http.middlewares.botpress-stripprefix.stripprefix.prefixes=/botpress"
-      - "traefik.http.routers.botpress.middlewares=botpress-stripprefix"
-      - "traefik.http.services.botpress.loadbalancer.server.port=3000"
-    volumes:
-      - ./data/botpress:/botpress/data
+      - ./data/baikal:/var/www/html/Specific
     networks:
       - raelflow_net
