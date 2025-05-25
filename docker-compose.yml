@@ -1,0 +1,158 @@
+version: '3.8'
+
+services:
+  akaunting:
+    image: akaunting/akaunting:latest
+    container_name: raelflow_akaunting
+    env_file: ./akaunting.env
+    depends_on:
+      - akaunting_db
+    ports:
+      - "8080:80"
+    volumes:
+      - ./data/akaunting/uploads:/var/www/html/storage
+    networks:
+      - raelflow_net
+
+  akaunting_db:
+    image: mariadb:10.7
+    container_name: raelflow_akaunting_db
+    environment:
+      MYSQL_DATABASE: akaunting
+      MYSQL_USER: akaunting
+      MYSQL_PASSWORD: S3nh4Akaunt!
+      MYSQL_ROOT_PASSWORD: rootpass
+    volumes:
+      - ./data/akaunting_db:/var/lib/mysql
+    networks:
+      - raelflow_net
+
+  firefly:
+    image: fireflyiii/core:latest
+    container_name: raelflow_firefly
+    env_file: ./firefly.env
+    depends_on:
+      - firefly_db
+    ports:
+      - "8051:8080"
+    volumes:
+      - ./data/firefly/upload:/var/www/html/storage/upload
+    networks:
+      - raelflow_net
+
+  firefly_db:
+    image: mariadb:10.7
+    container_name: raelflow_firefly_db
+    environment:
+      MYSQL_DATABASE: firefly
+      MYSQL_USER: firefly
+      MYSQL_PASSWORD: S3nh4Firefly!
+      MYSQL_ROOT_PASSWORD: rootpass2
+    volumes:
+      - ./data/firefly_db:/var/lib/mysql
+    networks:
+      - raelflow_net
+
+  openproject:
+    image: openproject/community:latest
+    container_name: raelflow_openproject
+    depends_on:
+      - openproject_db
+    ports:
+      - "8081:8080"
+    environment:
+      OPENPROJECT_HTTPS: "false"
+    volumes:
+      - ./data/openproject/assets:/var/openproject/assets
+    networks:
+      - raelflow_net
+
+  openproject_db:
+    image: postgres:13
+    container_name: raelflow_openproject_db
+    environment:
+      POSTGRES_USER: openproject
+      POSTGRES_PASSWORD: S3nh4OpenPr0j!
+      POSTGRES_DB: openproject
+    volumes:
+      - ./data/openproject_db:/var/lib/postgresql/data
+    networks:
+      - raelflow_net
+
+  baikal:
+    image: ckulka/baikal:latest
+    container_name: raelflow_baikal
+    ports:
+      - "8082:80"
+    volumes:
+      - ./data/baikal:/var/www/html/Specific/db
+    networks:
+      - raelflow_net
+
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: raelflow_n8n
+    ports:
+      - "8083:5678"
+    environment:
+      N8N_BASIC_AUTH_ACTIVE: "true"
+      N8N_BASIC_AUTH_USER: admin
+      N8N_BASIC_AUTH_PASSWORD: password123
+      N8N_HOST: "localhost"
+      N8N_PORT: 5678
+    volumes:
+      - ./data/n8n:/home/node/.n8n
+    networks:
+      - raelflow_net
+
+  metabase:
+    image: metabase/metabase:latest
+    container_name: raelflow_metabase
+    ports:
+      - "8084:3000"
+    environment:
+      JAVA_TIMEZONE: America/Sao_Paulo
+      MB_DB_FILE: /metabase.db/metabase.db
+    volumes:
+      - ./data/metabase:/metabase.db
+    networks:
+      - raelflow_net
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: raelflow_grafana
+    ports:
+      - "8085:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: S3nh4Gr4f!
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./data/grafana:/var/lib/grafana
+    networks:
+      - raelflow_net
+
+  botpress:
+    image: botpress/server:latest
+    container_name: raelflow_botpress
+    ports:
+      - "8086:3000"
+    environment:
+      BP_DATA_FOLDER: /botpress/data
+    volumes:
+      - ./data/botpress:/botpress/data
+    networks:
+      - raelflow_net
+
+  nota_fiscal:
+    build: ./microservice
+    container_name: raelflow_notafiscal
+    env_file: ./microservice/.env
+    depends_on:
+      - akaunting_db
+    networks:
+      - raelflow_net
+
+networks:
+  raelflow_net:
+    driver: bridge
