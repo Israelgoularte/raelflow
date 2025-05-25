@@ -54,7 +54,7 @@ services:
       - raelflow_net
 
   openproject:
-    image: openproject/community:latest
+    image: openproject/community:13.2-slim
     container_name: raelflow_openproject
     depends_on:
       - openproject_db
