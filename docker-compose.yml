@@ -14,15 +14,14 @@ services:
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:8080"
     ports:
-      - "8080:8080"    # HTTP entrypoint for all apps
-      - "8081:8081"    # Traefik dashboard (optional)
+      - "8080:8080"    # HTTP entrypoint for all apps & Traefik dashboard
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - raelflow_net
 
   akaunting_db:
-    image: mariadb:10.7
+    image: mariadb:10.5
     container_name: akaunting_db
     environment:
       MYSQL_ROOT_PASSWORD: rootpass
@@ -52,7 +51,7 @@ services:
       - raelflow_net
 
   firefly_db:
-    image: mariadb:10.7
+    image: mariadb:10.5
     container_name: firefly_db
     environment:
       MYSQL_ROOT_PASSWORD: rootpass
@@ -65,7 +64,7 @@ services:
       - raelflow_net
 
   firefly:
-    image: fireflyiii/firefly-iii:latest
+    image: fireflyiii/core:version-6.0.27
     container_name: firefly
     env_file:
       - firefly.env
@@ -76,6 +75,8 @@ services:
       - "traefik.http.routers.firefly.rule=PathPrefix(`/firefly`)"
       - "traefik.http.routers.firefly.entrypoints=web"
       - "traefik.http.services.firefly.loadbalancer.server.port=8080"
+    volumes:
+      - ./data/firefly_uploads:/var/www/html/storage
     networks:
       - raelflow_net
 
@@ -114,7 +115,7 @@ services:
       - raelflow_net
 
   baikal:
-    image: byron/baikal:latest
+    image: ckulka/baikal:0.9.4-apache
     container_name: baikal
     labels:
       - "traefik.enable=true"
@@ -179,3 +180,13 @@ services:
       - ./data/botpress:/botpress/data
     networks:
       - raelflow_net
+
+volumes:
+  akaunting_db:
+  firefly_db:
+  firefly_uploads:
+  openproject_db:
+  baikal_data:
+  n8n:
+  grafana:
+  botpress:
