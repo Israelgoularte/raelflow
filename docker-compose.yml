@@ -1,76 +1,28 @@
 version: "3.8"
 
-networks:
-  raelflow_net:
-    external: true
-
 services:
-  traefik:
-    image: traefik:v2.10
-    container_name: traefik
-    command:
-      - "--api.dashboard=true"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.web.address=:80"
+  n8n-main:
+    image: n8nio/n8n:latest
+    command: "start"
     ports:
-      - "80:80"
-      - "8081:8081"    # se quiser dashboard em /traefik
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    networks:
-      - raelflow_net
-
-  openproject_db:
-    image: postgres:14
-    container_name: openproject_db
+      - "127.0.0.1:5678:5678"
+    env_file: .env
     environment:
-      POSTGRES_USER: openproject
-      POSTGRES_PASSWORD: S3nh4OpenPr0j!
-      POSTGRES_DB: openproject
+      - N8N_CUSTOM_EXTENSIONS=/home/node/custom-nodes
     volumes:
-      - ./data/openproject_db:/var/lib/postgresql/data
-    networks:
-      - raelflow_net
+      - ./data:/home/node/.n8n
+      - ./custom-nodes:/home/node/custom-nodes
+      - ./ssl/rds-ca.pem:/home/node/.n8n/rds-ca.pem:ro
+      - ./backup:/git
+    container_name: n8n-main
 
-  openproject:
-    image: openproject/community:13.2-slim
-    container_name: openproject
-    depends_on:
-      - openproject_db
+  n8n-worker:
+    image: n8nio/n8n:latest
+    command: "worker"
+    env_file: .env
     environment:
-      OPENPROJECT_HTTPS: "false"
-      OPENPROJECT_DB_HOST: openproject_db
-      OPENPROJECT_DB_USERNAME: openproject
-      OPENPROJECT_DB_PASSWORD: S3nh4OpenPr0j!
-      OPENPROJECT_DB_DATABASE: openproject
-      OPENPROJECT_DB_DIALECT: postgresql
+      - N8N_CUSTOM_EXTENSIONS=/home/node/custom-nodes
     volumes:
-      - ./data/openproject_assets:/var/openproject/assets
-    labels:
-      - "traefik.enable=true"
-      # Roteia todo /openproject para este container
-      - "traefik.http.routers.openproject.rule=PathPrefix(`/openproject`)"
-      - "traefik.http.routers.openproject.entrypoints=web"
-      # StripPrefix antes de enviar para o container
-      - "traefik.http.middlewares.openproject-strip.stripprefix.prefixes=/openproject"
-      - "traefik.http.routers.openproject.middlewares=openproject-strip@docker"
-      # Porta interna do serviço
-      - "traefik.http.services.openproject.loadbalancer.server.port=8080"
-    networks:
-      - raelflow_net
-
-  calendar:
-    image: ckulka/baikal:0.9.4-apache
-    container_name: calendar
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.calendar.rule=PathPrefix(`/calendar`)"
-      - "traefik.http.routers.calendar.entrypoints=web"
-      - "traefik.http.middlewares.calendar-strip.stripprefix.prefixes=/calendar"
-      - "traefik.http.routers.calendar.middlewares=calendar-strip@docker"
-      - "traefik.http.services.calendar.loadbalancer.server.port=80"
-    volumes:
-      - ./data/calendar_data:/var/www/html/Specific
-    networks:
-      - raelflow_net
+      - ./data:/home/node/.n8n
+      - ./custom-nodes:/home/node/custom-nodes
+      - ./ssl/rds-ca.pem:/home/no
