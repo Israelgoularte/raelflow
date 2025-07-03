@@ -1,0 +1,68 @@
+.login-container,
+.app-container {
+  max-width: 500px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background-color: var(--medium-blue-color);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+h1 {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+input {
+  width: 100%;
+  padding: 0.5rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--light-blue-color);
+  color: var(--text-color);
+}
+
+button {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: var(--primary-color);
+  border: none;
+  border-radius: 4px;
+  color: var(--dark-blue-color);
+  font-weight: bold;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: var(--secondary-color);
+}
+
+.error {
+  color: var(--danger-color);
+  text-align: center;
+}
+
+.company-list {
+  list-style: none;
+  padding: 0;
+}
+
+.company-list li {
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.new-company {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.new-company input[type="number"] {
+  width: 80px;
+}
+
+.new-company button {
+  width: auto;
+}
